@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0swh3rc" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="2.0.3">
+  <bpmn:escalation id="Escalation_1ilux4q" name="compensationEscalation" escalationCode="compensationEscalation" />
+  <bpmn:collaboration id="Collaboration_06nrhf5">
+    <bpmn:participant id="Participant_10d3f0z" name="Super Compensation" processRef="superCompensationSketch" />
+    <bpmn:participant id="Participant_166hghh" name="Basic compensation" processRef="basicCompensationSketch" />
+    <bpmn:participant id="Participant_08cep18" name="Intermediate compensation" processRef="intermediateCompensationSketch" />
+  </bpmn:collaboration>
+  <bpmn:process id="superCompensationSketch" name="Super Compensation" isExecutable="false">
+    <bpmn:startEvent id="startSuper">
+      <bpmn:outgoing>SequenceFlow_036okiv</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_174jg32">
+      <bpmn:incoming>SequenceFlow_0nm70hk</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="compensationEndEvent">
+      <bpmn:incoming>SequenceFlow_0a6hg7l</bpmn:incoming>
+      <bpmn:compensateEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_1kfuzwm" name="log superprocess" camunda:delegateExpression="${logger}">
+      <bpmn:incoming>SequenceFlow_036okiv</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0ln2la6</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="compensateLoggingTask" name="compensate logging" isForCompensation="true" />
+    <bpmn:userTask id="Task_1a4yf5m" name="check the result">
+      <bpmn:incoming>SequenceFlow_1dxow3f</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0nm70hk</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="callActivity" name="Sub process" calledElement="intermediateCompensationSketch">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in variables="all" />
+        <camunda:out variables="all" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0ln2la6</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1dxow3f</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="BoundaryEvent_0z98nru" name="Compensate Escalation" attachedToRef="callActivity">
+      <bpmn:outgoing>SequenceFlow_0a6hg7l</bpmn:outgoing>
+      <bpmn:escalationEventDefinition escalationRef="Escalation_0s75dr0" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="BoundaryEvent_0jz644m" attachedToRef="Task_1kfuzwm">
+      <bpmn:compensateEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_036okiv" sourceRef="startSuper" targetRef="Task_1kfuzwm" />
+    <bpmn:sequenceFlow id="SequenceFlow_0ln2la6" sourceRef="Task_1kfuzwm" targetRef="callActivity" />
+    <bpmn:sequenceFlow id="SequenceFlow_1dxow3f" sourceRef="callActivity" targetRef="Task_1a4yf5m" />
+    <bpmn:sequenceFlow id="SequenceFlow_0nm70hk" sourceRef="Task_1a4yf5m" targetRef="EndEvent_174jg32" />
+    <bpmn:sequenceFlow id="SequenceFlow_0a6hg7l" sourceRef="BoundaryEvent_0z98nru" targetRef="compensationEndEvent" />
+    <bpmn:subProcess id="SubProcess_0yrhsgj" triggeredByEvent="true">
+      <bpmn:startEvent id="startCompensationMessageReceived" name="compensation message received">
+        <bpmn:outgoing>SequenceFlow_13jwjdh</bpmn:outgoing>
+        <bpmn:messageEventDefinition messageRef="Message_0z4l5pt" />
+      </bpmn:startEvent>
+      <bpmn:endEvent id="compensationEventSubprocessEndEvent">
+        <bpmn:incoming>SequenceFlow_13jwjdh</bpmn:incoming>
+        <bpmn:compensateEventDefinition />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_13jwjdh" sourceRef="startCompensationMessageReceived" targetRef="compensationEventSubprocessEndEvent" />
+    </bpmn:subProcess>
+    <bpmn:association id="Association_1pcn8fa" associationDirection="One" sourceRef="BoundaryEvent_0jz644m" targetRef="compensateLoggingTask" />
+    <bpmn:textAnnotation id="TextAnnotation_0isx7ac">
+      <bpmn:text>Compensates only in this process, 
+
+NOT in Subprocesses</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0hoa6z6" sourceRef="SubProcess_0yrhsgj" targetRef="TextAnnotation_0isx7ac" />
+  </bpmn:process>
+  <bpmn:process id="basicCompensationSketch" name="Basic Compensation" isExecutable="false">
+    <bpmn:startEvent id="startBasic" name="basic process started">
+      <bpmn:outgoing>SequenceFlow_0o8z0e0</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_06i2754" name="successful?">
+      <bpmn:incoming>SequenceFlow_01va4bl</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0jbhhzq</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_0x61qry</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_1m1ivz5" name="log something" camunda:delegateExpression="${logger}">
+      <bpmn:incoming>SequenceFlow_0o8z0e0</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_19x1cxw</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="checkForSuccessTask" name="check for success">
+      <bpmn:incoming>SequenceFlow_19x1cxw</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_01va4bl</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateThrowEvent id="throwCompensation">
+      <bpmn:incoming>SequenceFlow_0jbhhzq</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1bo8x7r</bpmn:outgoing>
+      <bpmn:compensateEventDefinition />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="compensationEscalationEndEvent" name="Compensate Escalation">
+      <bpmn:incoming>SequenceFlow_1bo8x7r</bpmn:incoming>
+      <bpmn:escalationEventDefinition escalationRef="Escalation_1ilux4q" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_0w464vr" name="successful">
+      <bpmn:incoming>SequenceFlow_0x61qry</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0x61qry" name="yes" sourceRef="ExclusiveGateway_06i2754" targetRef="EndEvent_0w464vr">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${success}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_0o8z0e0" sourceRef="startBasic" targetRef="Task_1m1ivz5" />
+    <bpmn:sequenceFlow id="SequenceFlow_19x1cxw" sourceRef="Task_1m1ivz5" targetRef="checkForSuccessTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_01va4bl" sourceRef="checkForSuccessTask" targetRef="ExclusiveGateway_06i2754" />
+    <bpmn:sequenceFlow id="SequenceFlow_0jbhhzq" name="no" sourceRef="ExclusiveGateway_06i2754" targetRef="throwCompensation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not success}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_1bo8x7r" sourceRef="throwCompensation" targetRef="compensationEscalationEndEvent" />
+    <bpmn:boundaryEvent id="BoundaryEvent_06wgm9v" attachedToRef="Task_1m1ivz5">
+      <bpmn:compensateEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:subProcess id="compensateSubprocess" name="Compensate" isForCompensation="true">
+      <bpmn:startEvent id="StartEvent_1umwhx6">
+        <bpmn:outgoing>SequenceFlow_1v7yiuy</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1v7yiuy" sourceRef="StartEvent_1umwhx6" targetRef="compensateTask" />
+      <bpmn:serviceTask id="compensateTask" name="Compensate" camunda:asyncBefore="true" camunda:delegateExpression="${compensationDelegate}">
+        <bpmn:incoming>SequenceFlow_1v7yiuy</bpmn:incoming>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+    <bpmn:association id="Association_1jwnbqa" associationDirection="One" sourceRef="BoundaryEvent_06wgm9v" targetRef="compensateSubprocess" />
+  </bpmn:process>
+  <bpmn:process id="intermediateCompensationSketch" name="Intermediate Compensation" isExecutable="false">
+    <bpmn:startEvent id="startIntermediate">
+      <bpmn:outgoing>SequenceFlow_108hboo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_108hboo" sourceRef="startIntermediate" targetRef="Task_0pdav1s" />
+    <bpmn:serviceTask id="Task_0pdav1s" name="log intermediate" camunda:delegateExpression="${logger}">
+      <bpmn:incoming>SequenceFlow_108hboo</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1r5v1iu</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1r5v1iu" sourceRef="Task_0pdav1s" targetRef="intermediateCallActivity" />
+    <bpmn:callActivity id="intermediateCallActivity" name="Call basic" calledElement="basicCompensationSketch">
+      <bpmn:extensionElements>
+        <camunda:in variables="all" />
+        <camunda:out variables="all" />
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1r5v1iu</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1bnjufy</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="BoundaryEvent_0xos52l" attachedToRef="intermediateCallActivity">
+      <bpmn:outgoing>SequenceFlow_05dwhqm</bpmn:outgoing>
+      <bpmn:escalationEventDefinition escalationRef="Escalation_1ilux4q" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_05dwhqm" sourceRef="BoundaryEvent_0xos52l" targetRef="EndEvent_0v0rvdu" />
+    <bpmn:endEvent id="EndEvent_0v0rvdu">
+      <bpmn:incoming>SequenceFlow_05dwhqm</bpmn:incoming>
+      <bpmn:escalationEventDefinition escalationRef="Escalation_0s75dr0" />
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="BoundaryEvent_10ejilo" attachedToRef="Task_0pdav1s">
+      <bpmn:compensateEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="compensateIntermediateTask" name="Compensate intermediate" isForCompensation="true" />
+    <bpmn:subProcess id="SubProcess_1f060cz" triggeredByEvent="true">
+      <bpmn:startEvent id="startEscalated">
+        <bpmn:outgoing>SequenceFlow_1s09uz2</bpmn:outgoing>
+        <bpmn:escalationEventDefinition escalationRef="Escalation_0s75dr0" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1s09uz2" sourceRef="startEscalated" targetRef="intermediateCompensationThrowEvent" />
+      <bpmn:intermediateThrowEvent id="intermediateCompensationThrowEvent">
+        <bpmn:incoming>SequenceFlow_1s09uz2</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_05yriav</bpmn:outgoing>
+        <bpmn:compensateEventDefinition />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_05yriav" sourceRef="intermediateCompensationThrowEvent" targetRef="EndEvent_0nmcnln" />
+      <bpmn:endEvent id="EndEvent_0nmcnln">
+        <bpmn:incoming>SequenceFlow_05yriav</bpmn:incoming>
+        <bpmn:escalationEventDefinition escalationRef="Escalation_0s75dr0" />
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_1ll7xag">
+      <bpmn:incoming>SequenceFlow_1bnjufy</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1bnjufy" sourceRef="intermediateCallActivity" targetRef="EndEvent_1ll7xag" />
+    <bpmn:association id="Association_1d188yx" associationDirection="One" sourceRef="BoundaryEvent_10ejilo" targetRef="compensateIntermediateTask" />
+  </bpmn:process>
+  <bpmn:escalation id="Escalation_0s75dr0" name="intermediateEscalation" escalationCode="intermediateEscalation" />
+  <bpmn:message id="Message_0z4l5pt" name="compensation message" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_06nrhf5">
+      <bpmndi:BPMNShape id="Participant_10d3f0z_di" bpmnElement="Participant_10d3f0z">
+        <dc:Bounds x="123" y="-210" width="1046" height="297" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startSuper">
+        <dc:Bounds x="173" y="-168" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CallActivity_0w1erpx_di" bpmnElement="callActivity">
+        <dc:Bounds x="476" y="-190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_174jg32_di" bpmnElement="EndEvent_174jg32">
+        <dc:Bounds x="809" y="-168" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1dxzrig_di" bpmnElement="startBasic">
+        <dc:Bounds x="192" y="492" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="176" y="535" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_06i2754_di" bpmnElement="ExclusiveGateway_06i2754" isMarkerVisible="true">
+        <dc:Bounds x="578" y="485" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="574" y="461" width="58" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_11j6ti2_di" bpmnElement="compensationEndEvent">
+        <dc:Bounds x="678" y="-48" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateThrowEvent_0dofp4z_di" bpmnElement="throwCompensation">
+        <dc:Bounds x="658" y="584" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_06z4iyd_di" bpmnElement="compensationEscalationEndEvent">
+        <dc:Bounds x="749" y="584" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="736" y="627" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_1ky7p3o_di" bpmnElement="BoundaryEvent_0z98nru">
+        <dc:Bounds x="558" y="-128" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="587" y="-94" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0zglx24_di" bpmnElement="BoundaryEvent_0jz644m">
+        <dc:Bounds x="341" y="-128" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_1oei9lp_di" bpmnElement="BoundaryEvent_06wgm9v">
+        <dc:Bounds x="292" y="532" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0a6hg7l_di" bpmnElement="SequenceFlow_0a6hg7l">
+        <di:waypoint x="576" y="-92" />
+        <di:waypoint x="576" y="-30" />
+        <di:waypoint x="678" y="-30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1bo8x7r_di" bpmnElement="SequenceFlow_1bo8x7r">
+        <di:waypoint x="694" y="602" />
+        <di:waypoint x="749" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0jbhhzq_di" bpmnElement="SequenceFlow_0jbhhzq">
+        <di:waypoint x="603" y="535" />
+        <di:waypoint x="603" y="602" />
+        <di:waypoint x="658" y="602" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="612" y="566" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_01va4bl_di" bpmnElement="SequenceFlow_01va4bl">
+        <di:waypoint x="528" y="510" />
+        <di:waypoint x="578" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_19x1cxw_di" bpmnElement="SequenceFlow_19x1cxw">
+        <di:waypoint x="378" y="510" />
+        <di:waypoint x="428" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0o8z0e0_di" bpmnElement="SequenceFlow_0o8z0e0">
+        <di:waypoint x="228" y="510" />
+        <di:waypoint x="278" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0nm70hk_di" bpmnElement="SequenceFlow_0nm70hk">
+        <di:waypoint x="759" y="-150" />
+        <di:waypoint x="809" y="-150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1dxow3f_di" bpmnElement="SequenceFlow_1dxow3f">
+        <di:waypoint x="576" y="-150" />
+        <di:waypoint x="659" y="-150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ln2la6_di" bpmnElement="SequenceFlow_0ln2la6">
+        <di:waypoint x="359" y="-150" />
+        <di:waypoint x="476" y="-150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_036okiv_di" bpmnElement="SequenceFlow_036okiv">
+        <di:waypoint x="209" y="-150" />
+        <di:waypoint x="259" y="-150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1pcn8fa_di" bpmnElement="Association_1pcn8fa">
+        <di:waypoint x="359" y="-92" />
+        <di:waypoint x="359" y="-30" />
+        <di:waypoint x="427" y="-30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_166hghh_di" bpmnElement="Participant_166hghh">
+        <dc:Bounds x="123" y="444" width="829" height="367" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0vuuhgp_di" bpmnElement="Task_1m1ivz5">
+        <dc:Bounds x="278" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_1lyu420_di" bpmnElement="checkForSuccessTask">
+        <dc:Bounds x="428" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0w464vr_di" bpmnElement="EndEvent_0w464vr">
+        <dc:Bounds x="714" y="492" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="706" y="535" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0x61qry_di" bpmnElement="SequenceFlow_0x61qry">
+        <di:waypoint x="628" y="510" />
+        <di:waypoint x="714" y="510" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="663" y="492" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0rvls5z_di" bpmnElement="Task_1kfuzwm">
+        <dc:Bounds x="259" y="-190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_0hyo1ho_di" bpmnElement="compensateLoggingTask">
+        <dc:Bounds x="427" y="-70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_0rwheha_di" bpmnElement="Task_1a4yf5m">
+        <dc:Bounds x="659" y="-190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1jwnbqa_di" bpmnElement="Association_1jwnbqa">
+        <di:waypoint x="310" y="568" />
+        <di:waypoint x="310" y="713" />
+        <di:waypoint x="352" y="713" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_07adlcb_di" bpmnElement="compensateSubprocess" isExpanded="true">
+        <dc:Bounds x="352" y="636" width="226" height="154" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1umwhx6_di" bpmnElement="StartEvent_1umwhx6">
+        <dc:Bounds x="372" y="712" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1v7yiuy_di" bpmnElement="SequenceFlow_1v7yiuy">
+        <di:waypoint x="408" y="730" />
+        <di:waypoint x="458" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0t39jh7_di" bpmnElement="compensateTask">
+        <dc:Bounds x="458" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_08cep18_di" bpmnElement="Participant_08cep18">
+        <dc:Bounds x="123" y="118" width="915" height="246" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1kr22ae_di" bpmnElement="startIntermediate">
+        <dc:Bounds x="195" y="155" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_108hboo_di" bpmnElement="SequenceFlow_108hboo">
+        <di:waypoint x="231" y="173" />
+        <di:waypoint x="281" y="173" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_13x0xh9_di" bpmnElement="Task_0pdav1s">
+        <dc:Bounds x="281" y="133" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1r5v1iu_di" bpmnElement="SequenceFlow_1r5v1iu">
+        <di:waypoint x="381" y="173" />
+        <di:waypoint x="431" y="173" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="CallActivity_189cdf9_di" bpmnElement="intermediateCallActivity">
+        <dc:Bounds x="431" y="133" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0p7ivpe_di" bpmnElement="BoundaryEvent_0xos52l">
+        <dc:Bounds x="513" y="195" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05dwhqm_di" bpmnElement="SequenceFlow_05dwhqm">
+        <di:waypoint x="531" y="231" />
+        <di:waypoint x="531" y="273" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_16h1xpk_di" bpmnElement="EndEvent_0v0rvdu">
+        <dc:Bounds x="513" y="273" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_1xsnnww_di" bpmnElement="SubProcess_1f060cz" isExpanded="true">
+        <dc:Bounds x="709" y="231" width="248" height="120" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0pekly0_di" bpmnElement="startEscalated">
+        <dc:Bounds x="729" y="251" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1s09uz2_di" bpmnElement="SequenceFlow_1s09uz2">
+        <di:waypoint x="765" y="269" />
+        <di:waypoint x="815" y="269" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateThrowEvent_0yf9jcl_di" bpmnElement="intermediateCompensationThrowEvent">
+        <dc:Bounds x="815" y="251" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05yriav_di" bpmnElement="SequenceFlow_05yriav">
+        <di:waypoint x="851" y="269" />
+        <di:waypoint x="901" y="269" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0x59b9x_di" bpmnElement="EndEvent_0nmcnln">
+        <dc:Bounds x="901" y="251" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0biqn5n_di" bpmnElement="BoundaryEvent_10ejilo">
+        <dc:Bounds x="292" y="195" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1d188yx_di" bpmnElement="Association_1d188yx">
+        <di:waypoint x="310" y="231" />
+        <di:waypoint x="310" y="302" />
+        <di:waypoint x="348" y="302" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_0fqxv6u_di" bpmnElement="compensateIntermediateTask">
+        <dc:Bounds x="348" y="262" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0zw2wqp_di" bpmnElement="startCompensationMessageReceived">
+        <dc:Bounds x="814" y="-24" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="787" y="19" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_13jwjdh_di" bpmnElement="SequenceFlow_13jwjdh">
+        <di:waypoint x="850" y="-6" />
+        <di:waypoint x="900" y="-6" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_04ko933_di" bpmnElement="compensationEventSubprocessEndEvent">
+        <dc:Bounds x="900" y="-24" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_0skclli_di" bpmnElement="SubProcess_0yrhsgj" isExpanded="true">
+        <dc:Bounds x="783" y="-60" width="186" height="120" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1ll7xag_di" bpmnElement="EndEvent_1ll7xag">
+        <dc:Bounds x="581" y="155" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1bnjufy_di" bpmnElement="SequenceFlow_1bnjufy">
+        <di:waypoint x="531" y="173" />
+        <di:waypoint x="581" y="173" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0isx7ac_di" bpmnElement="TextAnnotation_0isx7ac">
+        <dc:Bounds x="969" y="-140" width="134" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0hoa6z6_di" bpmnElement="Association_0hoa6z6">
+        <di:waypoint x="964" y="-58" />
+        <di:waypoint x="985" y="-72" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

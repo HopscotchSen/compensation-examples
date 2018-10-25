@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="2.0.3">
+  <bpmn:collaboration id="process-wrapper" isClosed="false">
+    <bpmn:participant id="E0000_Playground" name="Playground" processRef="E0000_Playground_Process" />
+  </bpmn:collaboration>
+  <bpmn:process id="E0000_Playground_Process" name="Playground" processType="None" isClosed="false" isExecutable="true">
+    <bpmn:laneSet>
+      <bpmn:lane id="Lane_1y6sf8d">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>input-validator</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>subprocess-call</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SuccessConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_17c8pcw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1ebipgt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>handle-compensation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_1lis3c0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_1mb1bky</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_0tdvhsp</bpmn:flowNodeRef>
+        <bpmn:childLaneSet />
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_07a51k1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_07a51k1" sourceRef="StartEvent_1" targetRef="input-validator" />
+    <bpmn:serviceTask id="input-validator" name="input validator" implementation="##WebService" camunda:delegateExpression="${inputValidator}">
+      <bpmn:incoming>SequenceFlow_07a51k1</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0t8w2iy</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_0tdvhsp" attachedToRef="input-validator">
+      <bpmn:compensateEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0t8w2iy" sourceRef="input-validator" targetRef="subprocess-call" />
+    <bpmn:callActivity id="subprocess-call" name="subprocess call" camunda:asyncBefore="true" calledElement="U0000_PlaygroundSub_Process">
+      <bpmn:extensionElements>
+        <camunda:in source="delegateId" target="delegateId" />
+        <camunda:in source="cancellable" target="cancellable" />
+        <camunda:in source="delegatorId" target="delegatorId" />
+        <camunda:in source="dynamicDescription" target="dynamicDescription" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0t8w2iy</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0rcvdd0</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="BoundaryEvent_1mb1bky" attachedToRef="subprocess-call">
+      <bpmn:outgoing>SequenceFlow_1tr1yps</bpmn:outgoing>
+      <bpmn:escalationEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0rcvdd0" sourceRef="subprocess-call" targetRef="Task_SuccessConfirmation" />
+    <bpmn:sequenceFlow id="SequenceFlow_0t2u3mt" sourceRef="Task_SuccessConfirmation" targetRef="EndEvent_17c8pcw" />
+    <bpmn:sequenceFlow id="SequenceFlow_1tr1yps" sourceRef="BoundaryEvent_1mb1bky" targetRef="EndEvent_1ebipgt" />
+    <bpmn:userTask id="Task_SuccessConfirmation" name="success confirmation" camunda:modelerTemplate="ch.lugano.confirmationTask" implementation="##unspecified" camunda:formKey="embedded:app:forms/success-confirmation.html" camunda:assignee="${delegateId}">
+      <bpmn:extensionElements />
+      <bpmn:incoming>SequenceFlow_0rcvdd0</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0t2u3mt</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_17c8pcw">
+      <bpmn:incoming>SequenceFlow_0t2u3mt</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_1ebipgt">
+      <bpmn:incoming>SequenceFlow_1tr1yps</bpmn:incoming>
+      <bpmn:escalationEventDefinition escalationRef="Escalation_10aj39n" />
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="handle-compensation" name="handle compensation" isForCompensation="true" camunda:asyncBefore="true" implementation="##WebService" camunda:delegateExpression="${parentCompensation}" />
+    <bpmn:subProcess id="cancellation" name="cancellation" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_CancellationRequestMessage" name="Start_CancellationRequestMessage">
+        <bpmn:outgoing>sequenceFlow_811f2957-e8b9-4846-a6b0-8b884c4de616</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="messageEventDefinition_ba47808b-605a-41c6-a605-74bdc1c2a939" messageRef="Message_1ltnq40" />
+      </bpmn:startEvent>
+      <bpmn:intermediateThrowEvent id="throwCompensation" name="throwCompensation">
+        <bpmn:incoming>sequenceFlow_811f2957-e8b9-4846-a6b0-8b884c4de616</bpmn:incoming>
+        <bpmn:outgoing>sequenceFlow_a4a597f7-10f7-4a0e-99dd-fc3a4d06d62b</bpmn:outgoing>
+        <bpmn:compensateEventDefinition id="compensateEventDefinition_f0b88066-599a-4437-af95-6cc71bd2032e" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:sequenceFlow id="sequenceFlow_811f2957-e8b9-4846-a6b0-8b884c4de616" sourceRef="Start_CancellationRequestMessage" targetRef="throwCompensation" />
+      <bpmn:endEvent id="End_CancellationMessage" name="End_CancellationMessage">
+        <bpmn:incoming>sequenceFlow_a4a597f7-10f7-4a0e-99dd-fc3a4d06d62b</bpmn:incoming>
+        <bpmn:escalationEventDefinition id="escalationEventDefinition_ce02794f-ef36-4991-980e-80ce1d41c407" escalationRef="escalation_a6e9f638-f503-487c-80c5-1ca7e831c6b1" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="sequenceFlow_a4a597f7-10f7-4a0e-99dd-fc3a4d06d62b" sourceRef="throwCompensation" targetRef="End_CancellationMessage" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="SubProcess_1lis3c0" name="cancellation escalation" triggeredByEvent="true">
+      <bpmn:intermediateThrowEvent id="IntermediateThrowEvent_0vifx5l" name="throwCompensation">
+        <bpmn:incoming>SequenceFlow_0uqqnma</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1kbno67</bpmn:outgoing>
+        <bpmn:compensateEventDefinition />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="End_CancellationEscalation" name="End_CancellationEscalation">
+        <bpmn:incoming>SequenceFlow_1kbno67</bpmn:incoming>
+        <bpmn:escalationEventDefinition escalationRef="Escalation_10aj39n" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_0uqqnma" sourceRef="Start_CancellationEscalation" targetRef="IntermediateThrowEvent_0vifx5l" />
+      <bpmn:sequenceFlow id="SequenceFlow_1kbno67" sourceRef="IntermediateThrowEvent_0vifx5l" targetRef="End_CancellationEscalation" />
+      <bpmn:startEvent id="Start_CancellationEscalation" name="Start_CancellationEscalation">
+        <bpmn:outgoing>SequenceFlow_0uqqnma</bpmn:outgoing>
+        <bpmn:escalationEventDefinition escalationRef="Escalation_10aj39n" />
+      </bpmn:startEvent>
+    </bpmn:subProcess>
+    <bpmn:association id="Association_1e19gdz" associationDirection="One" sourceRef="BoundaryEvent_0tdvhsp" targetRef="handle-compensation" />
+    <bpmn:textAnnotation id="TextAnnotation_0hfm5eo">
+      <bpmn:text>1.
+frontend users request cancellation
+
+2.
+our backend handles this request by sending a message to the leaf process instance of the given business key, triggering this event-subprocess
+
+3.
+once compensation is over, we end by escalating, so that if this process instance was called by another process, the calling process can detect this and handle its own compensation (see other event-subprocess)</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1xi9cci" sourceRef="cancellation" targetRef="TextAnnotation_0hfm5eo" />
+    <bpmn:textAnnotation id="TextAnnotation_0efss83">
+      <bpmn:text>1.
+process catches escalation on call-activity and emits another escalation, triggering this event-subprocess
+
+2.
+once compensation is done, we escalate again in case of a parent caller
+
+3.
+PROBLEM: our backend needs to make sure that compensation was successful up to the root process instance before it can confirm a successful cancellation to the frontend</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1g3jskx" sourceRef="SubProcess_1lis3c0" targetRef="TextAnnotation_0efss83" />
+  </bpmn:process>
+  <bpmn:message id="Message_1u5b62a" name="aMessage" />
+  <bpmn:message id="Message_1ltnq40" name="userCancelRequest" />
+  <bpmn:message id="Message_0zjdha0" />
+  <bpmn:message id="Message_02p6ss9" name="Msg_E0000_Start" />
+  <bpmn:error id="error_9c9d37f5-df70-49dd-a807-55c07068355e" errorCode="timeoutBpmError" />
+  <bpmn:escalation id="escalation_a6e9f638-f503-487c-80c5-1ca7e831c6b1" name="cancellationEscalation" escalationCode="cancellationEscalation" />
+  <bpmn:error id="error_25fce69d-06aa-4382-9abb-8953267140bc" errorCode="unrecoverableBpmError" />
+  <bpmn:escalation id="Escalation_10aj39n" name="cancellationEscalation" escalationCode="cancellationEscalation" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process-wrapper">
+      <bpmndi:BPMNShape id="Participant_15sbbaz_di" bpmnElement="E0000_Playground">
+        <dc:Bounds x="209" y="83" width="859" height="699" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="294" y="171" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="267" y="207" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1e3wz5u_di" bpmnElement="input-validator">
+        <dc:Bounds x="362" y="149" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_1lnel70_di" bpmnElement="Task_SuccessConfirmation">
+        <dc:Bounds x="637" y="149" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_17c8pcw_di" bpmnElement="EndEvent_17c8pcw">
+        <dc:Bounds x="768" y="171" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="741" y="211" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0t2u3mt_di" bpmnElement="SequenceFlow_0t2u3mt">
+        <di:waypoint x="737" y="189" />
+        <di:waypoint x="768" y="189" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="707.5" y="168" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Lane_1y6sf8d_di" bpmnElement="Lane_1y6sf8d">
+        <dc:Bounds x="239" y="83" width="829" height="699" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1hilm8s_di" bpmnElement="handle-compensation">
+        <dc:Bounds x="359" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CallActivity_04my1t5_di" bpmnElement="subprocess-call">
+        <dc:Bounds x="499" y="149" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0t8w2iy_di" bpmnElement="SequenceFlow_0t8w2iy">
+        <di:waypoint x="462" y="189" />
+        <di:waypoint x="499" y="189" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="435.5" y="168" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_0gm3eey_di" bpmnElement="BoundaryEvent_0tdvhsp">
+        <dc:Bounds x="394" y="211" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="322" y="251" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1e19gdz_di" bpmnElement="Association_1e19gdz">
+        <di:waypoint x="411" y="247" />
+        <di:waypoint x="411" y="276" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0rcvdd0_di" bpmnElement="SequenceFlow_0rcvdd0">
+        <di:waypoint x="599" y="189" />
+        <di:waypoint x="637" y="189" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="618" y="168" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_07a51k1_di" bpmnElement="SequenceFlow_07a51k1">
+        <di:waypoint x="330" y="189" />
+        <di:waypoint x="362" y="189" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="346" y="168" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_0ceq9cm_di" bpmnElement="BoundaryEvent_1mb1bky">
+        <dc:Bounds x="581" y="211" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="599" y="251" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1tr1yps_di" bpmnElement="SequenceFlow_1tr1yps">
+        <di:waypoint x="599" y="247" />
+        <di:waypoint x="599" y="298" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="569" y="266.5" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_a5fe376b-fed8-435f-992d-9e70c6db6fe6" bpmnElement="cancellation" isExpanded="true">
+        <dc:Bounds x="276" y="388" width="352" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_3a76f11f-23d5-4f03-923f-af4e056082ec" bpmnElement="Start_CancellationRequestMessage">
+        <dc:Bounds x="330" y="447" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="307" y="483" width="83" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_49917c1e-0bdd-4049-a8ba-f556d68c131c" bpmnElement="throwCompensation">
+        <dc:Bounds x="442" y="447" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="418" y="483" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_2209627f-80a1-447d-bae0-053d936bc1c0" bpmnElement="sequenceFlow_811f2957-e8b9-4846-a6b0-8b884c4de616">
+        <di:waypoint x="366" y="465" />
+        <di:waypoint x="442" y="465" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1154" y="161" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_104f838c-e30c-432a-aa9b-5f24a82bc0ac" bpmnElement="End_CancellationMessage">
+        <dc:Bounds x="548" y="447" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="527" y="483" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_7ef13d5b-c3e4-49c0-b39c-ce5964b8e8c8" bpmnElement="sequenceFlow_a4a597f7-10f7-4a0e-99dd-fc3a4d06d62b">
+        <di:waypoint x="478" y="465" />
+        <di:waypoint x="548" y="465" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1263" y="161" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_1lis3c0_di" bpmnElement="SubProcess_1lis3c0" isExpanded="true">
+        <dc:Bounds x="679" y="385" width="350" height="165" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateThrowEvent_0vifx5l_di" bpmnElement="IntermediateThrowEvent_0vifx5l">
+        <dc:Bounds x="839" y="432" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="815" y="468" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1vjhrd9_di" bpmnElement="End_CancellationEscalation">
+        <dc:Bounds x="946" y="432" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="922" y="468" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0uqqnma_di" bpmnElement="SequenceFlow_0uqqnma">
+        <di:waypoint x="765" y="450" />
+        <di:waypoint x="839" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1195" y="577" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1kbno67_di" bpmnElement="SequenceFlow_1kbno67">
+        <di:waypoint x="875" y="450" />
+        <di:waypoint x="946" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1303.5" y="577" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_1ipstyi_di" bpmnElement="Start_CancellationEscalation">
+        <dc:Bounds x="729" y="432" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="705" y="468" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1be5ywe_di" bpmnElement="EndEvent_1ebipgt">
+        <dc:Bounds x="581" y="298" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="554" y="337" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0hfm5eo_di" bpmnElement="TextAnnotation_0hfm5eo">
+        <dc:Bounds x="277" y="566" width="350" height="196" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1xi9cci_di" bpmnElement="Association_1xi9cci">
+        <di:waypoint x="453" y="548" />
+        <di:waypoint x="453" y="566" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0efss83_di" bpmnElement="TextAnnotation_0efss83">
+        <dc:Bounds x="678" y="566" width="351" height="182" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1g3jskx_di" bpmnElement="Association_1g3jskx">
+        <di:waypoint x="854" y="550" />
+        <di:waypoint x="854" y="566" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
